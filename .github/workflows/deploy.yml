@@ -21,7 +21,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
 
           script: |
-            cd apps/kad-monitor/
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            cd apps/kad-monitor
             git pull
             npm ci
             pm2 restart kad-monitor
