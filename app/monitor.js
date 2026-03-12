@@ -4,6 +4,7 @@ import scheduleTask from './scheduler.js'
 import {API_KEY, API_URL} from "../const/api.js";
 import {dbService} from "./db-service.js";
 import {INN} from "../const/inn.js";
+import {Status} from "../const/status.js";
 
 const inn = INN;
 
@@ -34,12 +35,19 @@ const getCases = async () => {
         );
 
         const {data: responseData} = res;
+        const {data, meta} = responseData
 
-        return responseData.data['Записи'] || [];
+        const {status, message} = meta;
+
+        if (status === Status.Error) {
+            throw Error(message)
+        }
+
+        return {cases: data['Записи'] ?? [], status};
 
     } catch (e) {
-        sendTGMessage(`⚠️При получении списка дел произошла ошибка ${e}⚠️`)
-        return [];
+        sendTGMessage(`⚠️При получении списка дел произошла ошибка: ${e.message}⚠️`)
+        return {cases: [], status: Status.Error};
     }
 }
 
@@ -47,9 +55,9 @@ async function check() {
     const db = dbService.load()
     const updates = await getUpdates();
 
-    const cases = await getCases(inn);
+    const {cases, status} = await getCases(inn);
 
-    if (!cases.length) {
+    if (!cases.length && status === Status.Success) {
         await sendTGMessage(`🐀Крысиных дел по ИНН ${inn} нет`)
     }
 
